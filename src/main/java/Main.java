@@ -32,7 +32,7 @@ public class Main {
           socket.getOutputStream().write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
           break;
         default:
-          socket.getOutputStream().write("HTTP/1.1 404 NOT FOUND\r\n\r\n".getBytes());
+          socket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
 
       }
 
