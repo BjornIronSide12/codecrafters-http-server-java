@@ -3,6 +3,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main {
   public static void main(String[] args) {
@@ -21,20 +23,47 @@ public class Main {
     
       Socket socket = serverSocket.accept(); // Wait for connection from client.
       System.out.println("accepted new connection");
-      InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
-      BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-      String line = bufferedReader.readLine();
-      System.out.println(line);
-      String[] request = line.split(" ");
-      System.out.println(request[0] +  request[1]);
-      switch (request[1]) {
-        case "/" :
-          socket.getOutputStream().write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
-          break;
-        default:
-          socket.getOutputStream().write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
+      try(
+          InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
+          BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+      )
+        {
+          String line;
+          String requestLine = null;
+          //Read Request line
+          while((line = bufferedReader.readLine()) != null) {
+            if(line.isEmpty()) {
+              // End of headers
+              break;
+            }
+            if(requestLine == null) {
+              requestLine = line;
+            }
+          }
+          if(requestLine != null) {
+            Pattern echoPattern = Pattern.compile("GET /echo/([^\\s]+) HTTP/1\\.1");
+            Matcher echoMatcher = echoPattern.matcher(requestLine);
 
-      }
+            Pattern emptyPattern = Pattern.compile("GET / HTTP/1\\.1");
+            Matcher emptyMatcher = emptyPattern.matcher(requestLine);
+
+            String response;
+
+            if(echoMatcher.find()) {
+              String echoedString = echoMatcher.group(1);
+               response = "HTTP/1.1 200 OK\r\n" +
+                                "Content-Type: text/plain\r\n" +
+                                "Content-Length: " + echoedString.getBytes().length + "\r\n\r\n" +
+                                echoedString;
+            } else if(emptyMatcher.find()) {
+              response =  "HTTP/1.1 200 OK\r\n\r\n";
+            } else {
+              response = "HTTP/1.1 404 Not Found\r\n\r\n";
+            }
+            socket.getOutputStream().write(response.getBytes());
+            socket.getOutputStream().flush();
+          }
+        }
 
     } catch (IOException e) {
       System.out.println("IOException: " + e.getMessage());
