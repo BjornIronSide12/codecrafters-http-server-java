@@ -11,71 +11,7 @@ public class Main {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     System.out.println("Logs from your program will appear here!");
 
-    // Uncomment this block to pass the first stage
-    // adding test comment 
-
-    try {
-      ServerSocket serverSocket = new ServerSocket(4221);
-    
-      // Since the tester restarts your program quite often, setting SO_REUSEADDR
-      // ensures that we don't run into 'Address already in use' errors
-      serverSocket.setReuseAddress(true);
-    
-      Socket socket = serverSocket.accept(); // Wait for connection from client.
-      System.out.println("accepted new connection");
-      try(
-          InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
-          BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-      )
-        {
-          String line;
-          String requestLine = null;
-          String userAgent = null;
-          //Read Request line
-          while((line = bufferedReader.readLine()) != null) {
-            if(line.isEmpty()) {
-              // End of headers
-              break;
-            }
-            if(requestLine == null) {
-              requestLine = line;
-            }
-            if(line.startsWith("User-Agent:")) {
-              userAgent = line.substring("User-Agent:".length()).trim(); // returns value after "User-Agent" after trimming leading and trailing white spaces
-            }
-          }
-          if(requestLine != null || userAgent != null) {
-            Pattern echoPattern = Pattern.compile("GET /echo/([^\\s]+) HTTP/1\\.1");
-            Matcher echoMatcher = echoPattern.matcher(requestLine);
-
-            Pattern emptyPattern = Pattern.compile("GET / HTTP/1\\.1");
-            Matcher emptyMatcher = emptyPattern.matcher(requestLine);
-
-            String response;
-
-            if(echoMatcher.find()) {
-              String echoedString = echoMatcher.group(1);
-               response = "HTTP/1.1 200 OK\r\n" +
-                                "Content-Type: text/plain\r\n" +
-                                "Content-Length: " + echoedString.getBytes().length + "\r\n\r\n" +
-                                echoedString;
-            } else if(emptyMatcher.find()) {
-              response =  "HTTP/1.1 200 OK\r\n\r\n";
-            } else if(userAgent != null) {
-                response = "HTTP/1.1 200 OK\r\n" +
-                          "Content-Type: text/plain\r\n" +
-                          "Content-Length: " + userAgent.getBytes().length + "\r\n\r\n" +
-                          userAgent;
-            } else {
-              response = "HTTP/1.1 404 Not Found\r\n\r\n";
-            }
-            socket.getOutputStream().write(response.getBytes());
-            socket.getOutputStream().flush();
-          }
-        }
-
-    } catch (IOException e) {
-      System.out.println("IOException: " + e.getMessage());
-    }
+    final HttpServer httpServer = new HttpServer(4221, 10);
+    httpServer.run();
   }
 }
