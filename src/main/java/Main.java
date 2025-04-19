@@ -30,6 +30,7 @@ public class Main {
         {
           String line;
           String requestLine = null;
+          String userAgent = null;
           //Read Request line
           while((line = bufferedReader.readLine()) != null) {
             if(line.isEmpty()) {
@@ -39,8 +40,11 @@ public class Main {
             if(requestLine == null) {
               requestLine = line;
             }
+            if(line.startsWith("User-Agent:")) {
+              userAgent = line.substring("User-Agent:".length()).trim(); // returns value after "User-Agent" after trimming leading and trailing white spaces
+            }
           }
-          if(requestLine != null) {
+          if(requestLine != null || userAgent != null) {
             Pattern echoPattern = Pattern.compile("GET /echo/([^\\s]+) HTTP/1\\.1");
             Matcher echoMatcher = echoPattern.matcher(requestLine);
 
@@ -57,6 +61,11 @@ public class Main {
                                 echoedString;
             } else if(emptyMatcher.find()) {
               response =  "HTTP/1.1 200 OK\r\n\r\n";
+            } else if(userAgent != null) {
+                response = "HTTP/1.1 200 OK\r\n" +
+                          "Content-Type: text/plain\r\n" +
+                          "Content-Length: " + userAgent.getBytes().length + "\r\n\r\n" +
+                          userAgent;
             } else {
               response = "HTTP/1.1 404 Not Found\r\n\r\n";
             }
