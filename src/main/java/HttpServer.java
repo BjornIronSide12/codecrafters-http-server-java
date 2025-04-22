@@ -42,13 +42,13 @@ public class HttpServer implements Runnable{
         ) {
             String header;
             String requestLine = bufferedReader.readLine();
-            Map<String, String> requestHeaders = new HashMap<>();
-            String response;
+            Map<String, String> requestHeadersMap = new HashMap<>();
+            String response = "HTTP/1.1 404 Not Found\r\n\r\n";
             //Read Request line
             while ((header = bufferedReader.readLine()) != null && !header.isEmpty()) {
                   String[] keyVal = header.split(":", 2);
                   if(keyVal.length == 2) {
-                      requestHeaders.put(keyVal[0], keyVal[1].trim());
+                      requestHeadersMap.put(keyVal[0], keyVal[1].trim());
                   }
             }
             // Read body
@@ -63,7 +63,9 @@ public class HttpServer implements Runnable{
             String httpMethod = requestLinePieces[0];
             String requestTarget = requestLinePieces[1];
             String httpVersion = requestLinePieces[2];
-
+//            System.out.println("MyhttpMethod " + httpMethod );
+//            System.out.println("MyrequestTarget " + requestTarget );
+//            System.out.println("MyHttpVersion " + httpVersion );
             //write
             if(httpMethod.equals("POST")) {
                 if(requestTarget.startsWith("/files/")) {
@@ -72,7 +74,6 @@ public class HttpServer implements Runnable{
                         FileWriter fileWriter = new FileWriter(file);
                         fileWriter.write(body);
                         fileWriter.close();
-                        System.out.println("bob the builder");
                     } response = "HTTP/1.1 201 Created\r\n\r\n";
                 } else {
                     response = "HTTP/1.1 404 Not Found\r\n\r\n";
@@ -80,20 +81,25 @@ public class HttpServer implements Runnable{
             } else {
                 if (requestTarget.equals("/")) {
                     response = "HTTP/1.1 200 OK\r\n\r\n";
-                } else if (requestTarget.startsWith("/echo/")) {
+                }   else if (requestTarget.startsWith("/echo/")) {
                     String echoString = requestTarget.substring(6);
-                    response = "HTTP/1.1 200 OK\r\n"
-                            + "Content-Type: text/plain\r\n"
-                            + "Content-Length: " + echoString.length() +
-                            "\r\n"
-                            + "\r\n" + echoString;
+                    String contentEncoding = requestHeadersMap.get("Accept-Encoding");
+                    if("gzip".equalsIgnoreCase(contentEncoding)) {
+                        response = "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "
+                                 + echoString.length() +
+                                "\r\n\r\n" + echoString;
+                    } else {
+                            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " +
+                                    echoString.length() +
+                                    "\r\n\r\n" + echoString;
+                    }
                 } else if (requestTarget.equals("/user-agent")) {
                     response =
                             "HTTP/1.1 200 OK\r\n"
                                     + "Content-Type: text/plain\r\n"
-                                    + "Content-Length: " + requestHeaders.get("User-Agent").length() +
+                                    + "Content-Length: " + requestHeadersMap.get("User-Agent").length() +
                                     "\r\n"
-                                    + "\r\n" + requestHeaders.get("User-Agent");
+                                    + "\r\n" + requestHeadersMap.get("User-Agent");
                 } else if (requestTarget.startsWith("/files/")) {
                     String fileName = requestTarget.substring(7);
                     FileReader fileReader;
