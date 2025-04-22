@@ -63,9 +63,6 @@ public class HttpServer implements Runnable{
             String httpMethod = requestLinePieces[0];
             String requestTarget = requestLinePieces[1];
             String httpVersion = requestLinePieces[2];
-//            System.out.println("MyhttpMethod " + httpMethod );
-//            System.out.println("MyrequestTarget " + requestTarget );
-//            System.out.println("MyHttpVersion " + httpVersion );
             //write
             if(httpMethod.equals("POST")) {
                 if(requestTarget.startsWith("/files/")) {
@@ -83,16 +80,31 @@ public class HttpServer implements Runnable{
                     response = "HTTP/1.1 200 OK\r\n\r\n";
                 }   else if (requestTarget.startsWith("/echo/")) {
                     String echoString = requestTarget.substring(6);
+                    Boolean isGzip = false;
                     String contentEncoding = requestHeadersMap.get("Accept-Encoding");
-                    if("gzip".equalsIgnoreCase(contentEncoding)) {
-                        response = "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "
-                                 + echoString.length() +
-                                "\r\n\r\n" + echoString;
-                    } else {
-                            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " +
-                                    echoString.length() +
+                        if(contentEncoding != null) {
+                            String[] encodings = contentEncoding.split(",");
+
+                            for(String encoding: encodings) {
+                                System.out.println(encoding + " enc " + "gzip".equalsIgnoreCase(encoding.trim()));
+
+                                if("gzip".equalsIgnoreCase(encoding.trim())) {
+                                    isGzip = true;
+                                    System.out.println(isGzip + " changes sds ");
+                                    break;
+                                }
+                            }
+                        }
+                        if(isGzip) {
+                            response = "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "
+                                     + echoString.length() +
                                     "\r\n\r\n" + echoString;
-                    }
+                        }
+                        else {
+                                response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " +
+                                        echoString.length() +
+                                        "\r\n\r\n" + echoString;
+                        }
                 } else if (requestTarget.equals("/user-agent")) {
                     response =
                             "HTTP/1.1 200 OK\r\n"
