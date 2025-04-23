@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.GZIPOutputStream;
 
 public class HttpServer implements Runnable{
 
@@ -96,9 +97,19 @@ public class HttpServer implements Runnable{
                             }
                         }
                         if(isGzip) {
+                            // Compress the response body using gzip
+                            ByteArrayOutputStream byteArrayOutputStream =
+                                    new ByteArrayOutputStream();
+                            try (GZIPOutputStream gzipOutputStream =
+                                         new GZIPOutputStream(byteArrayOutputStream)) {
+                                gzipOutputStream.write(echoString.getBytes("UTF-8"));
+                            }
+                            byte[] gzipData = byteArrayOutputStream.toByteArray();
                             response = "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "
-                                     + echoString.length() +
-                                    "\r\n\r\n" + echoString;
+                                     + gzipData.length + "\r\n\r\n";
+                            outputStream.write(response.getBytes("UTF-8"));
+                            outputStream.write(gzipData);
+
                         }
                         else {
                                 response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " +
